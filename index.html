@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MercadoSmart</title>
+<meta name="theme-color" content="#059669">
+<meta name="description" content="Organize suas compras, acompanhe o orçamento e monte sua lista com ajuda de IA.">
+<meta name="application-name" content="MercadoSmart">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="MercadoSmart">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icon.svg" type="image/svg+xml">
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html,body{height:100%}
+body{font-family:Inter,system-ui,sans-serif;background:#f5f3ef;color:#1e293b;margin:0}
+input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none}
+input[type=number]{-moz-appearance:textfield}
+.cart-bg{background-color:#e8f5ec;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150'%3E%3Cg font-size='32' opacity='.28'%3E%3Ctext x='10' y='42' transform='rotate(-12 24 32)'%3E🛒%3C/text%3E%3Ctext x='88' y='58' transform='rotate(10 100 48)'%3E🥕%3C/text%3E%3Ctext x='22' y='124' transform='rotate(8 36 114)'%3E🍎%3C/text%3E%3Ctext x='94' y='136' transform='rotate(-8 106 126)'%3E🥖%3C/text%3E%3C/g%3E%3C/svg%3E");background-size:150px 150px}
+.dot{animation:b 1.4s infinite ease-in-out both}.dot:nth-child(1){animation-delay:-.32s}.dot:nth-child(2){animation-delay:-.16s}
+@keyframes b{0%,80%,100%{transform:scale(0);opacity:.4}40%{transform:scale(1);opacity:1}}
+</style>
+</head>
+<body class="flex flex-col overflow-hidden">
+
+<header class="bg-white shrink-0 shadow-sm z-10">
+<div class="max-w-5xl mx-auto px-4 pt-3 pb-3">
+  <div class="flex items-center justify-between mb-3">
+    <div class="flex items-center gap-2.5"><div class="w-9 h-9 rounded-xl bg-emerald-600 flex items-center justify-center text-lg">🛒</div><h1 class="text-lg font-extrabold text-stone-900 tracking-tight">MercadoSmart</h1></div>
+    <button onclick="openM('budget-modal')" class="flex items-center gap-1.5 bg-stone-100 active:bg-stone-200 px-3.5 py-2 rounded-full text-xs font-semibold text-stone-600">Meta <span id="budget-display" class="text-stone-900 font-extrabold"></span> ✏️</button>
+  </div>
+  <div class="flex items-end justify-between gap-3">
+    <div><span id="rem-label" class="text-[11px] uppercase tracking-wider font-semibold text-stone-400">Ainda cabe</span><div id="rem" class="text-3xl font-extrabold leading-tight text-emerald-600"></div></div>
+    <div class="text-right text-xs text-stone-500 leading-relaxed">No carrinho <b id="t-cart" class="text-stone-900 text-sm"></b><br>Lista toda <b id="t-list" class="text-stone-700 text-sm"></b></div>
+  </div>
+  <div class="mt-2.5 flex items-center gap-2">
+    <div class="flex-1 bg-stone-100 rounded-full h-2.5 overflow-hidden"><div id="bar" class="h-2.5 rounded-full transition-all duration-300"></div></div>
+    <span id="pct" class="text-[11px] font-bold w-9 text-right"></span>
+  </div>
+  <div class="grid grid-cols-2 gap-1.5 mt-2.5 bg-stone-100 p-1 rounded-2xl lg:hidden">
+    <button id="tab-cart" onclick="tab('cart')" class="py-2.5 rounded-lg text-sm font-bold">🛒 Meu Carrinho <span id="tab-badge" class="bg-emerald-100 text-emerald-800 px-1.5 rounded-full text-[10px]"></span></button>
+    <button id="tab-chat" onclick="tab('chat')" class="py-2.5 rounded-lg text-sm font-bold">💬 Ajuda</button>
+  </div>
+</div>
+</header>
+
+<main class="flex-1 max-w-5xl w-full mx-auto overflow-hidden grid grid-cols-1 lg:grid-cols-12 min-h-0">
+  <section id="p-cart" class="lg:col-span-7 flex flex-col h-full overflow-hidden border-r border-stone-200 min-h-0 bg-stone-50">
+    <div class="px-4 py-2.5 bg-white border-b border-stone-200 flex items-center justify-between shrink-0">
+      <span id="prog" class="text-xs font-semibold text-stone-600"></span>
+      <div class="flex items-center gap-1.5">
+        
+        <button onclick="openAdd()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3 py-1.5 rounded-xl">+ Item</button>
+        <button onclick="openM('reset-modal')" class="px-2.5 py-1 text-stone-500 hover:bg-stone-100 rounded-xl border border-stone-200 font-bold">⋯</button>
+      </div>
+    </div>
+    <div class="flex-1 overflow-y-auto px-4 py-3.5 space-y-5 pb-4">
+      <div class="bg-white border border-stone-200 rounded-2xl p-3 flex items-center justify-between gap-2.5 text-xs text-stone-600">
+        <p class="leading-snug">Itens na ordem do mercado. Fotografe a <b>etiqueta</b> para pegar o <b>preço</b> e use <b>+ / −</b> para a quantidade.</p>
+        <button onclick="quick(cheapPrompt())" class="lg:hidden shrink-0 text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1.5 rounded-xl">Baratear</button>
+      </div>
+      <div>
+        <h2 class="text-xs font-bold uppercase tracking-wider text-stone-500 mb-2 px-1">Falta Pegar <span id="pend-badge" class="bg-stone-200 text-stone-700 px-2 py-0.5 rounded-full text-[11px]"></span></h2>
+        <div id="pending" class="space-y-2"></div>
+        <div id="done-banner" class="hidden bg-emerald-50 border border-emerald-200 rounded-2xl p-5 text-center my-2"><h3 class="font-bold text-emerald-950 text-sm">✅ Compra concluída!</h3><p class="text-xs text-emerald-700 mt-0.5">Todos os itens já estão no seu carrinho.</p></div>
+        <div id="empty-banner" class="hidden bg-white border border-dashed border-stone-300 rounded-2xl p-6 text-center my-2"><p class="text-sm font-semibold">Sua lista está vazia</p><p class="text-xs text-stone-500 mt-1">Adicione itens, escaneie uma etiqueta ou peça ajuda para montar a lista.</p></div>
+      </div>
+      <div id="done-sec" class="hidden cart-bg rounded-3xl p-3 -mx-1">
+        <h2 class="text-xs font-bold uppercase tracking-wider text-emerald-700 mb-2 px-1">✓ No Carrinho <span id="done-badge" class="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full text-[11px]"></span></h2>
+        <div id="done" class="space-y-2"></div>
+      </div>
+    </div>
+  <div id="scan-slot" class="shrink-0 p-3 bg-white border-t border-stone-200"></div>
+  </section>
+
+  <section id="p-chat" class="hidden lg:flex lg:col-span-5 flex-col h-full overflow-hidden bg-white min-h-0">
+    <div class="px-4 py-2.5 bg-emerald-50 border-b border-emerald-100 flex items-center justify-between shrink-0">
+      <div><h2 class="text-xs font-bold text-emerald-950">Ajuda com a compra</h2><p class="text-[10px] text-emerald-700">Pergunte o que quiser sobre sua lista</p></div>
+      <div class="flex items-center"><span class="text-[11px] font-semibold text-emerald-700 px-2 py-1 rounded-lg">✨ IA pronta</span><button onclick="resetChat()" class="text-[11px] font-medium text-emerald-700 px-2 py-1 rounded-lg hover:bg-emerald-100">Nova conversa</button></div>
+    </div>
+    <div id="chat" class="flex-1 overflow-y-auto p-4 space-y-3.5 bg-stone-50 min-h-0"></div>
+    <div class="px-3 pt-2 pb-1.5 bg-white border-t border-stone-100 shrink-0">
+      <div class="flex gap-1.5 overflow-x-auto pb-1">
+        <button onclick="quick('Baratear meu carrinho atual mantendo as proteínas e cabendo com folga no orçamento')" class="shrink-0 text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 px-3 py-1.5 rounded-full">💸 Baratear carrinho</button>
+        <button onclick="quick('Comparar Atacadão vs Condor/Muffato em Curitiba para essa compra')" class="shrink-0 text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 px-3 py-1.5 rounded-full">🏪 Atacadão vs Mercado</button>
+        <button onclick="quick('Montar carrinho para Noite de Hambúrguer artesanal completo até R$ 150')" class="shrink-0 text-[11px] font-semibold bg-stone-100 text-stone-700 border border-stone-200 px-3 py-1.5 rounded-full">🍔 Hambúrguer (R$ 150)</button>
+        <button onclick="quick('Montar carrinho de Dieta e Treino da Semana (frango, ovos, legumes, carboidratos) até R$ 200')" class="shrink-0 text-[11px] font-semibold bg-stone-100 text-stone-700 border border-stone-200 px-3 py-1.5 rounded-full">🥗 Dieta (R$ 200)</button>
+      </div>
+    </div>
+    <form onsubmit="submitChat(event)" class="p-3 bg-white border-t border-stone-200 shrink-0 flex items-end gap-2">
+      <textarea id="chat-input" rows="1" placeholder="Ex: Churrasco pra 4 pessoas por R$ 150" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();submitChat(event)}" oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,112)+'px'" class="flex-1 max-h-28 px-3.5 py-2.5 rounded-2xl border border-stone-300 focus:border-emerald-500 outline-none text-sm resize-none bg-stone-50"></textarea>
+      <button id="send" type="submit" class="w-10 h-10 rounded-2xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white shrink-0">➤</button>
+    </form>
+  </section>
+</main>
+
+<div id="add-modal" class="fixed inset-0 z-50 hidden items-end sm:items-center justify-center bg-stone-900/50 sm:p-4">
+  <div class="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl">
+    <div class="flex items-center justify-between mb-4"><h3 class="text-lg font-bold">Novo Item na Lista</h3><button onclick="closeM('add-modal')" class="px-2.5 py-1 text-stone-500 rounded-xl bg-stone-100">✕</button></div>
+    <form onsubmit="addItem(event)" class="space-y-4">
+      <div><label class="block text-xs font-semibold text-stone-600 uppercase mb-1">Nome do Produto *</label><input id="n-name" required placeholder="Ex: Queijo prato fatiado" class="w-full px-4 py-3 rounded-xl border border-stone-300 outline-none text-sm"></div>
+      <div class="grid grid-cols-2 gap-3">
+        <div><label class="block text-xs font-semibold text-stone-600 uppercase mb-1">Quantidade</label><input id="n-qty" placeholder="200g ou 1 un." class="w-full px-4 py-3 rounded-xl border border-stone-300 outline-none text-sm"></div>
+        <div><label class="block text-xs font-semibold text-stone-600 uppercase mb-1">Preço (R$) *</label><input type="number" id="n-price" step="0.01" min="0" required placeholder="0,00" class="w-full px-4 py-3 rounded-xl border border-stone-300 outline-none text-sm font-semibold"></div>
+      </div>
+      <div><label class="block text-xs font-semibold text-stone-600 uppercase mb-1">Setor</label>
+        <select id="n-cat" class="w-full px-4 py-3 rounded-xl border border-stone-300 text-sm bg-white">
+          <option>Açougue</option><option>Hortifrúti</option><option>Laticínios</option><option>Padaria</option><option>Congelados</option><option selected>Mercearia</option><option>Bebidas</option><option>Limpeza</option><option>Outros</option>
+        </select></div>
+      <div class="flex gap-2"><button type="button" onclick="closeM('add-modal')" class="flex-1 py-3 rounded-xl border border-stone-200 text-stone-600 font-semibold text-sm">Cancelar</button><button class="flex-1 py-3 rounded-xl bg-emerald-600 text-white font-semibold text-sm">Salvar Item</button></div>
+    </form>
+  </div>
+</div>
+
+<div id="budget-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-stone-900/50 p-4">
+  <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl">
+    <h3 class="text-lg font-bold mb-1">Orçamento Máximo</h3><p class="text-xs text-stone-500 mb-4">Esse é o valor máximo da sua compra.</p>
+    <form onsubmit="setBudget(event)" class="space-y-4">
+      <input type="number" id="b-input" step="0.01" min="0" required class="w-full px-4 py-3.5 rounded-xl border border-stone-300 outline-none text-lg font-bold">
+      <div class="flex gap-2"><button type="button" onclick="closeM('budget-modal')" class="flex-1 py-3 rounded-xl border border-stone-200 text-stone-600 font-semibold text-sm">Cancelar</button><button class="flex-1 py-3 rounded-xl bg-emerald-600 text-white font-semibold text-sm">Atualizar</button></div>
+    </form>
+  </div>
+</div>
+
+<div id="reset-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-stone-900/50 p-4">
+  <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl">
+    <h3 class="text-lg font-bold mb-3">Gerenciar Carrinho</h3>
+    <div class="space-y-2">
+      <button onclick="uncheckAll()" class="w-full py-3 px-4 rounded-xl bg-stone-100 text-left font-semibold text-sm">Desmarcar todos os itens</button>
+      <button onclick="clearAll()" class="w-full py-3 px-4 rounded-xl bg-amber-50 text-amber-800 text-left font-semibold text-sm">Esvaziar lista inteira</button>
+      <button onclick="restore()" class="w-full py-3 px-4 rounded-xl bg-rose-50 text-rose-700 text-left font-semibold text-sm">Restaurar lista vazia</button>
+    </div>
+    <button onclick="closeM('reset-modal')" class="w-full mt-4 py-2.5 rounded-xl border border-stone-200 text-stone-500 font-semibold text-xs">Fechar</button>
+  </div>
+</div>
+
+<div id="first-start" class="fixed inset-0 z-[100] flex items-center justify-center bg-emerald-700 p-6" style="padding-top:calc(env(safe-area-inset-top,0px) + 24px);padding-bottom:calc(env(safe-area-inset-bottom,0px) + 24px)">
+  <div class="w-full max-w-sm rounded-[2rem] bg-white p-7 text-center shadow-2xl">
+    <div class="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-3xl bg-emerald-100 text-4xl">🛒</div>
+    <p class="mb-2 text-xs font-extrabold uppercase tracking-[.18em] text-emerald-700">Bem-vindo ao MercadoSmart</p>
+    <h2 class="mb-3 text-3xl font-extrabold leading-tight text-stone-900">Faça seu carrinho agora!</h2>
+    <p class="mb-7 text-sm leading-relaxed text-stone-600">Monte sua lista do zero com a ajuda da inteligência artificial. Sua compra é só sua: nenhum produto vem preenchido.</p>
+    <button onclick="beginFirstUse()" class="w-full rounded-2xl bg-emerald-600 px-5 py-4 text-base font-extrabold text-white shadow-lg shadow-emerald-600/25 active:scale-[.98]">Começar minha compra</button>
+  </div>
+</div>
+
+<div id="toast" class="fixed left-1/2 -transtone-x-1/2 z-50 bg-stone-900 text-white text-xs font-medium px-4 py-2.5 rounded-full shadow-lg opacity-0 pointer-events-none transition-opacity whitespace-nowrap" style="top:calc(env(safe-area-inset-top,0px) + 96px)"></div>
+
+<script>
+const KI='ms_items_v3',KB='ms_budget_v4',KC='ms_chat_v3';
+const DEF=[];
+const WELCOME=[{id:'w',role:'assistant',text:'Olá! 👋 Sua lista está vazia. Conte o que você quer comprar, quantas pessoas vão consumir e qual é seu orçamento. Posso montar uma lista para você.',suggestedItems:[]}];
+const CATS=['Açougue','Hortifrúti','Laticínios','Padaria','Congelados','Mercearia','Bebidas','Limpeza','Outros'];
+const BADGE={'Açougue':'bg-rose-50 text-rose-700 border-rose-200','Hortifrúti':'bg-emerald-50 text-emerald-700 border-emerald-200','Laticínios':'bg-sky-50 text-sky-700 border-sky-200','Padaria':'bg-amber-50 text-amber-700 border-amber-200','Congelados':'bg-cyan-50 text-cyan-700 border-cyan-200','Mercearia':'bg-violet-50 text-violet-700 border-violet-200','Bebidas':'bg-blue-50 text-blue-700 border-blue-200','Limpeza':'bg-teal-50 text-teal-700 border-teal-200','Outros':'bg-stone-100 text-stone-600 border-stone-200'};
+let items=[],budget=0,msgs=[],busy=false,sample=null;
+const thumbs={}; // fotos só em memória
+const clone=o=>JSON.parse(JSON.stringify(o));
+const brl=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const $=id=>document.getElementById(id);
+function toast(m){const t=$('toast');t.textContent=m;t.classList.remove('opacity-0');setTimeout(()=>t.classList.add('opacity-0'),2400)}
+function load(){try{items=JSON.parse(localStorage.getItem(KI))||clone(DEF);{const savedBudget=localStorage.getItem(KB);budget=savedBudget===null?0:(parseFloat(savedBudget)||0)};msgs=JSON.parse(localStorage.getItem(KC))||clone(WELCOME)}catch(e){items=clone(DEF);msgs=clone(WELCOME)}}
+function save(){try{localStorage.setItem(KI,JSON.stringify(items));localStorage.setItem(KB,String(budget));localStorage.setItem(KC,JSON.stringify(msgs))}catch(e){}}
+function openM(id){if(id==='budget-modal')$('b-input').value=budget.toFixed(2);const m=$(id);m.classList.remove('hidden');m.classList.add('flex')}
+function closeM(id){const m=$(id);m.classList.add('hidden');m.classList.remove('flex')}
+function openAdd(){$('n-name').value='';$('n-qty').value='';$('n-price').value='';openM('add-modal');setTimeout(()=>$('n-name').focus(),100)}
+function tab(t){
+  const c=t==='cart';
+  $('p-cart').classList.toggle('hidden',!c);$('p-cart').classList.toggle('flex',c);
+  $('p-chat').classList.toggle('hidden',c);$('p-chat').classList.toggle('flex',!c);
+  $('tab-cart').className='py-2.5 rounded-lg text-sm font-bold '+(c?'bg-white text-stone-900 shadow-sm':'text-stone-600');
+  $('tab-chat').className='py-2.5 rounded-lg text-sm font-bold '+(!c?'bg-white text-emerald-950 shadow-sm':'text-stone-600');
+  if(!c)scrollChat();
+}
+function toggle(id){const i=items.find(x=>x.id===id);if(i){i.checked=!i.checked;save();renderCart()}}
+function setPrice(id,v){const i=items.find(x=>x.id===id);if(i){const p=parseFloat(String(v).replace(',','.'));i.price=isNaN(p)||p<0?0:p;save();summary()}}
+function del(id){items=items.filter(i=>i.id!==id);save();renderCart();toast('Item removido')}
+let wasOver=false;
+const sub=i=>i.price*(i.n||1);
+function summary(){
+  const total=items.reduce((a,i)=>a+sub(i),0),chk=items.filter(i=>i.checked),cart=chk.reduce((a,i)=>a+sub(i),0),rem=budget-cart;
+  $('budget-display').textContent=brl(budget);$('t-list').textContent=brl(total);$('t-cart').textContent=brl(cart);
+  const r=$('rem'),rl=$('rem-label');
+  if(rem>=0){rl.textContent='Ainda cabe';rl.className='text-[11px] uppercase tracking-wider font-semibold text-stone-400';r.textContent=brl(rem);r.className='text-3xl font-extrabold leading-tight text-emerald-600'}
+  else{rl.textContent='Passou';rl.className='text-[11px] uppercase tracking-wider font-semibold text-rose-500';r.textContent='- '+brl(-rem);r.className='text-3xl font-extrabold leading-tight text-rose-600'}
+  const ratio=budget>0?cart/budget*100:0,col=ratio>100?'rose':ratio>=85?'amber':'emerald';
+  $('bar').style.width=Math.min(100,Math.max(0,ratio))+'%';$('bar').className='h-2.5 rounded-full transition-all duration-300 bg-'+col+'-500';
+  $('pct').textContent=Math.round(ratio)+'%';$('pct').className='text-[11px] font-bold w-9 text-right text-'+col+'-600';
+  $('prog').textContent=`${chk.length} de ${items.length} ${items.length===1?'item pego':'itens pegos'}`;
+  $('tab-badge').textContent=items.length;
+  if(rem<0&&!wasOver)toast('⚠️ Passou do orçamento!');
+  wasOver=rem<0;
+}
+const ORDER=['Hortifrúti','Padaria','Açougue','Laticínios','Congelados','Mercearia','Bebidas','Limpeza','Outros'];
+const ICON={'Hortifrúti':'🥦','Padaria':'🍞','Açougue':'🥩','Laticínios':'🥛','Congelados':'❄️','Mercearia':'🛒','Bebidas':'🥤','Limpeza':'🧽','Outros':'📦'};
+function grouped(list){return ORDER.map(c=>{const g=list.filter(i=>(ORDER.includes(i.category)?i.category:'Outros')===c);
+  return g.length?`<div class="flex items-center gap-2 pt-3 pb-1 px-1"><span class="text-lg">${ICON[c]}</span><span class="text-sm font-bold text-stone-700">${c}</span><span class="text-xs text-stone-400">${g.length}</span></div>`+g.map(i=>card(i,false)).join(''):''}).join('')}
+function qty(id,d){const i=items.find(x=>x.id===id);if(i){i.n=Math.max(1,(i.n||1)+d);save();renderCart()}}
+function readingHTML(i){
+  const r=i.reading;if(!r)return'';
+  if(r.status==='scanning')return`<div class="mt-3 pl-11"><div class="flex items-center gap-2 text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2"><span class="w-3.5 h-3.5 rounded-full border-2 border-emerald-600 border-t-transparent animate-spin"></span>Lendo etiqueta...</div></div>`;
+  if(r.status==='success')return`<div class="mt-3 pl-11"><div class="bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2 text-xs flex justify-between gap-2"><div class="leading-snug"><p class="font-bold text-emerald-900">Preço lido: ${brl(r.price)}${r.label?' ('+esc(r.label)+')':''}</p><p class="text-[11px] text-stone-600 mt-0.5">Confira e ajuste se precisar${r.obs?' • '+esc(r.obs):''}</p></div>${camBtn(i.id,'text-[11px] font-bold text-emerald-700 underline shrink-0','Tentar novamente')}</div></div>`;
+  return`<div class="mt-3 pl-11"><div class="bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 text-xs flex justify-between gap-2"><div class="leading-snug"><p class="font-bold text-amber-900">Leitura com dúvida</p><p class="text-[11px] text-amber-800 mt-0.5">${esc(r.obs||'Não deu para ter certeza.')} Ajuste o preço manualmente ou tente outra foto.</p></div>${camBtn(i.id,'text-[11px] font-bold text-amber-900 bg-amber-200 px-2 py-1 rounded-lg shrink-0','Tentar novamente')}</div></div>`;
+}
+function card(i,showCat){
+  const c=i.checked,scan=i.reading&&i.reading.status==='scanning';
+  const th=thumbs[i.id]?`<img src="${thumbs[i.id]}" alt="Etiqueta" class="w-9 h-9 rounded-xl object-cover border border-stone-300 shrink-0">`:'';
+  const n=i.n||1;
+  const stepper=`<div class="flex items-center bg-stone-50 border border-stone-200 rounded-xl shrink-0"><button onclick="qty('${i.id}',-1)" class="w-10 h-10 text-xl font-bold text-stone-600 active:bg-stone-200 rounded-l-xl">−</button><span class="w-6 text-center text-sm font-bold">${n}</span><button onclick="qty('${i.id}',1)" class="w-10 h-10 text-xl font-bold text-emerald-700 active:bg-emerald-100 rounded-r-xl">+</button></div>`;
+  return`<div class="p-4 rounded-2xl ${c?'bg-white/90':'bg-white shadow-[0_1px_3px_rgba(0,0,0,.1)]'}">
+  <div class="flex items-start gap-3">
+    <button onclick="toggle('${i.id}')" class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-lg border-2 ${c?'bg-emerald-600 border-emerald-600 text-white':'border-stone-300 bg-stone-50'}">${c?'✓':''}</button>
+    <div class="flex-1 min-w-0 cursor-pointer pt-0.5" onclick="toggle('${i.id}')"><p class="text-[15px] font-semibold leading-snug ${c?'line-through text-stone-500':'text-stone-900'}">${esc(i.name)}</p></div>
+    <button onclick="del('${i.id}')" class="p-1.5 text-stone-400 hover:text-rose-500 shrink-0">🗑</button>
+  </div>
+  <div class="mt-3 pl-11 flex items-center justify-between gap-2 flex-wrap">
+    <div class="flex items-center gap-1.5 flex-wrap min-w-0">${showCat?`<span class="text-[11px] font-semibold px-2 py-0.5 rounded-md border ${BADGE[i.category]||BADGE.Outros}">${esc(i.category)}</span>`:''}${i.qty?`<span class="text-xs font-medium text-stone-500">${esc(i.qty)}</span>`:''}${n>1?`<span class="text-xs font-bold text-emerald-700">${n}× = ${brl(i.price*n)}</span>`:''}</div>
+    <div class="flex items-center gap-1.5 shrink-0 ml-auto">
+      ${th}
+      ${stepper}
+      ${camBtn(i.id,'w-9 h-9 rounded-xl border border-emerald-200 bg-emerald-50 disabled:opacity-50 flex items-center justify-center shrink-0','📷',scan)}
+      <label class="w-[95px] flex items-center justify-between bg-stone-50 border border-stone-200 rounded-xl px-2.5 py-2"><span class="text-[11px] font-semibold text-stone-400">R$</span>
+        <input type="number" step="0.01" min="0" inputmode="decimal" value="${i.price.toFixed(2)}" onchange="setPrice('${i.id}',this.value)" onblur="this.value=parseFloat(this.value||0).toFixed(2)" onfocus="this.select()" class="w-14 text-right text-sm font-bold bg-transparent outline-none ${c?'text-emerald-700':'text-stone-800'}"></label>
+    </div>
+  </div>${readingHTML(i)}</div>`;
+}
+function renderCart(){
+  const p=items.filter(i=>!i.checked),d=items.filter(i=>i.checked);
+  $('pend-badge').textContent=p.length;$('done-badge').textContent=d.length;
+  $('empty-banner').classList.toggle('hidden',items.length>0);
+  $('done-banner').classList.toggle('hidden',!(items.length>0&&p.length===0));
+  $('pending').innerHTML=grouped(p);
+  $('done-sec').classList.toggle('hidden',d.length===0);
+  $('done').innerHTML=d.map(i=>card(i,true)).join('');
+  summary();
+}
+
+/* ---- Leitura de etiqueta (IA via Claude) ---- */
+let camTarget=null;
+function camBtn(id,cls,text,dis){const t=id?`'${id}'`:'null';return `<label class="relative overflow-hidden cursor-pointer ${cls}${dis?' opacity-50 pointer-events-none':''}">${text}<input type="file" accept="image/*" capture="environment" onclick="camTarget=${t}" onchange="onPhoto(event)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"></label>`}
+function compress(file,max=1280,q=.82){return new Promise((res,rej)=>{
+  const url=URL.createObjectURL(file),img=new Image();
+  img.onerror=()=>rej(new Error('img'));
+  img.onload=()=>{let w=img.width,h=img.height;if(w>max||h>max){if(w>=h){h=Math.round(h*max/w);w=max}else{w=Math.round(w*max/h);h=max}}
+    const cv=document.createElement('canvas');cv.width=w;cv.height=h;cv.getContext('2d').drawImage(img,0,0,w,h);URL.revokeObjectURL(url);
+    cv.toBlob(b=>b?res({blob:b,dataUrl:cv.toDataURL('image/jpeg',.5)}):rej(new Error('blob')),'image/jpeg',q)};
+  img.src=url})}
+const ERR={no_key:'A IA está temporariamente indisponível. Tente novamente mais tarde.',http_400:'Não consegui entender esse pedido. Tente reformular.',http_403:'A IA está temporariamente indisponível. Avise o responsável pelo aplicativo.',http_429:'Limite de uso atingido. Espere um pouco e tente de novo.',not_granted:'Permita o uso quando o aviso aparecer.',images_unavailable:'O envio de foto não está disponível nesta tela.',rate_limited:'Muitas leituras seguidas. Espere um pouco.'};
+async function onPhoto(ev){
+  const f=ev.target.files&&ev.target.files[0];if(!f)return;
+  
+  let c;try{c=await compress(f)}catch(e){toast('Não consegui abrir a foto');return}
+  let it=camTarget?items.find(x=>x.id===camTarget):null;const isNew=!it;
+  if(isNew){it={id:Date.now()+'-s',name:'Lendo etiqueta...',qty:'',category:'Mercearia',price:0,checked:false,reading:null};items.unshift(it)}
+  thumbs[it.id]=c.dataUrl;it.reading={status:'scanning'};renderCart();
+  try{
+    const lim=await sample.limits();
+    if(!lim||!lim.images)throw {code:'images_unavailable'};
+    const ctx=isNew?'Produto ainda desconhecido.':`Item esperado: "${it.name}" (qtd: "${it.qty||'n/d'}").`;
+    const prompt=`Analise esta foto de etiqueta de preço de supermercado no Brasil. ${ctx} Responda SOMENTE um JSON: {"name": nome do produto lido na etiqueta (curto e claro), "qty": peso/quantidade se aparecer (ex: 500g), "category": uma de ${CATS.join(', ')}, "price": número em reais da etiqueta principal (0 se ilegível), "obs": observação curta (preço por kg, promoção, etiqueta borrada...), "unclear": true se a leitura for duvidosa por luz, foco, reflexo ou corte}. Se houver preço por kg e por embalagem, prefira o da unidade visível e explique em obs.`;
+    const r=await sample.json(prompt,{images:[c.blob],modelTier:'quick',cache:false});
+    const p=Number(r.price),ok=!isNaN(p)&&p>0;
+    if(isNew){if(r.name)it.name=String(r.name);else it.name='Produto da etiqueta';if(r.qty)it.qty=String(r.qty);it.category=normCat(r.category)}
+    if(ok)it.price=p;
+    if(ok&&!r.unclear){it.checked=true;it.reading={status:'success',price:p,label:r.name||'',obs:r.obs||''};toast('No carrinho: '+(it.name)+' • '+brl(p))}
+    else{it.reading={status:'unclear',obs:r.obs||'Não foi possível ter certeza do valor.'};toast('Confira o preço na etiqueta')}
+  }catch(e){
+    const msg=ERR[e&&e.code]||('Falha ao ler a etiqueta ('+((e&&e.code)||'erro')+'). Digite o valor ou tente de novo.');
+    it.reading={status:'unclear',obs:msg};toast('Não foi possível ler a foto');
+  }
+  save();renderCart();
+}
+
+/* ---- Chat IA ---- */
+function normCat(c){return CATS.find(v=>v.toLowerCase()===String(c||'').trim().toLowerCase())||'Mercearia'}
+function applyItems(mid,mode){
+  const m=msgs.find(x=>x.id===mid);if(!m||!m.suggestedItems.length)return;
+  const n=m.suggestedItems.map((s,k)=>({id:Date.now()+'-'+k+'-'+Math.random().toString(36).slice(2,6),name:String(s.name||'Produto'),qty:String(s.qty||'1 un.'),category:normCat(s.category),price:Math.max(0,Number(s.price)||0),checked:false,reading:null}));
+  if(mode==='replace'){items=n;toast(`Carrinho substituído (${n.length} itens)!`)}else{items=[...n,...items];toast(`+${n.length} itens adicionados!`)}
+  save();renderCart();if(innerWidth<1024)tab('cart');
+}
+function fmt(t){return esc(t).replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>')}
+function renderChat(){
+  let h='';
+  msgs.forEach(m=>{
+    if(m.role==='user'){h+=`<div class="flex justify-end"><div class="max-w-[85%] bg-stone-800 text-white rounded-2xl rounded-tr-sm px-4 py-2.5 text-sm">${fmt(m.text)}</div></div>`;return}
+    const has=m.suggestedItems&&m.suggestedItems.length,tot=has?m.suggestedItems.reduce((s,i)=>s+(Number(i.price)||0),0):0;
+    let card='';
+    if(has)card=`<div class="mt-3 bg-white rounded-xl border border-emerald-200 p-3">
+      <div class="flex items-center justify-between mb-2 pb-1.5 border-b border-stone-100"><span class="text-[11px] font-bold uppercase tracking-wider text-emerald-900">Sugestão (${m.suggestedItems.length})</span><span class="text-xs font-extrabold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">Total: ${brl(tot)}</span></div>
+      <div class="max-h-48 overflow-y-auto pr-1 mb-2.5">${m.suggestedItems.map(i=>`<div class="flex items-center justify-between py-1.5 border-b border-emerald-100 last:border-none text-xs"><div class="min-w-0 pr-2"><span class="font-semibold">${esc(i.name)}</span> <span class="text-stone-500">(${esc(i.qty)})</span></div><span class="font-bold text-emerald-700 shrink-0">${brl(i.price)}</span></div>`).join('')}</div>
+      <div class="grid grid-cols-2 gap-2"><button onclick="applyItems('${m.id}','add')" class="py-2 rounded-xl bg-emerald-600 text-white font-bold text-xs">+ Adicionar</button><button onclick="applyItems('${m.id}','replace')" class="py-2 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold text-xs">Substituir Lista</button></div></div>`;
+    h+=`<div class="flex justify-start"><div class="max-w-[92%] bg-emerald-50 border border-emerald-100 rounded-2xl rounded-tl-sm px-4 py-3 text-sm leading-relaxed"><div>${fmt(m.text)}</div>${card}</div></div>`;
+  });
+  if(busy)h+=`<div class="flex justify-start"><div class="bg-emerald-50 border border-emerald-100 rounded-2xl px-4 py-3 flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-500 dot"></span><span class="w-2 h-2 rounded-full bg-emerald-500 dot"></span><span class="w-2 h-2 rounded-full bg-emerald-500 dot"></span></div></div>`;
+  $('chat').innerHTML=h;scrollChat();
+}
+function scrollChat(){setTimeout(()=>{const c=$('chat');c.scrollTop=c.scrollHeight},40)}
+async function ask(text){
+  if(!sample)throw new Error('nosample');
+  const total=items.reduce((s,i)=>s+sub(i),0);
+  const ctx=items.length?items.map(i=>`- ${i.name} (${i.qty}): R$ ${i.price.toFixed(2)} x${i.n||1} [${i.category}]${i.checked?' (JÁ NO CARRINHO)':''}`).join('\n'):'Carrinho vazio.';
+  const sys=`Você é o MercadoSmart IA, especialista prático em compras de supermercado no Brasil (preços reais de Curitiba/PR; atacarejos como Atacadão, Assaí, Max Atacadista e redes como Condor, Muffato e Festval).
+CONTEXTO: Orçamento máximo R$ ${budget.toFixed(2)}. Total previsto atual R$ ${total.toFixed(2)}. Itens:
+${ctx}
+DIRETRIZES: 1) Português do Brasil, direto e amigável. 2) Ajude a escolher o tipo de mercado ideal. 3) Ao montar lista, sugerir compras ou baratear, preencha suggestedItems com itens concretos e preços realistas respeitando o orçamento. 4) Para "baratear o carrinho", devolva a lista completa otimizada. 5) Dúvida geral: suggestedItems = []. 6) Use **negrito** e listas curtas em reply.
+Responda SOMENTE um JSON: {"reply": string, "suggestedItems": [{"name": string, "qty": string, "category": uma de ${CATS.join(', ')}, "price": número}]}`;
+  const hist=msgs.slice(-8).filter(m=>m.id!=='w').map(m=>`${m.role==='user'?'Usuário':'Assistente'}: ${m.text}`).join('\n');
+  const r=await sample.json(sys+'\n\nHISTÓRICO RECENTE:\n'+hist+'\n\nMENSAGEM DO USUÁRIO: '+text,{cache:false});
+  return{reply:r.reply||'Aqui estão minhas sugestões:',suggestedItems:Array.isArray(r.suggestedItems)?r.suggestedItems:[]};
+}
+async function send(text){
+  text=text.trim();if(!text||busy)return;
+  msgs.push({id:'u-'+Date.now(),role:'user',text,suggestedItems:[]});
+  busy=true;$('send').disabled=true;save();renderChat();
+  try{const r=await ask(text);msgs.push({id:'a-'+Date.now(),role:'assistant',text:r.reply,suggestedItems:r.suggestedItems})}
+  catch(e){msgs.push({id:'e-'+Date.now(),role:'assistant',text:ERR[e&&e.code]||('Não consegui responder agora ('+((e&&e.code)||'erro')+'). Tente de novo.'),suggestedItems:[]})}
+  busy=false;$('send').disabled=false;save();renderChat();
+}
+function submitChat(e){e.preventDefault();const i=$('chat-input'),v=i.value;if(!v.trim())return;i.value='';i.style.height='auto';send(v)}
+function quick(t){if(innerWidth<1024)tab('chat');send(t)}
+function cheapPrompt(){return`Analise meu carrinho atual e monte uma versão mais barata que caiba com folga no meu orçamento de ${brl(budget)}, sugerindo trocas inteligentes de cortes ou quantidades.`}
+function resetChat(){msgs=clone(WELCOME);save();renderChat();toast('Conversa reiniciada')}
+
+/* ---- Ações manuais ---- */
+function addItem(e){e.preventDefault();const name=$('n-name').value.trim();if(!name)return;
+  items.unshift({id:Date.now().toString(),name,qty:$('n-qty').value.trim(),category:$('n-cat').value,price:parseFloat($('n-price').value)||0,checked:false,reading:null});
+  save();renderCart();closeM('add-modal');toast('Item adicionado!')}
+function setBudget(e){e.preventDefault();const v=parseFloat($('b-input').value);if(Number.isFinite(v)&&v>=0){budget=v;save();summary();closeM('budget-modal');toast('Orçamento: '+brl(v))}}
+function uncheckAll(){items.forEach(i=>i.checked=false);save();renderCart();closeM('reset-modal');toast('Itens desmarcados')}
+function clearAll(){items=[];save();renderCart();closeM('reset-modal');toast('Lista esvaziada')}
+function restore(){items=[];budget=0;save();renderCart();closeM('reset-modal');toast('Lista esvaziada!')}
+
+function beginFirstUse(){
+  try{localStorage.setItem('ms_onboarded_v1','1')}catch(e){}
+  $('first-start').classList.add('hidden');
+  tab('chat');
+}
+
+$('scan-slot').innerHTML=camBtn(null,'flex items-center justify-center gap-2 w-full bg-emerald-600 active:bg-emerald-700 text-white text-base font-bold py-4 rounded-2xl shadow-lg shadow-emerald-600/30','📷 Escanear etiqueta');load();renderCart();renderChat();tab('cart');
+if(innerWidth>=1024){$('p-cart').classList.add('flex');$('p-chat').classList.add('flex')}
+addEventListener('resize',()=>{if(innerWidth>=1024){$('p-cart').classList.remove('hidden');$('p-cart').classList.add('flex');$('p-chat').classList.remove('hidden');$('p-chat').classList.add('flex')}else tab($('p-chat').classList.contains('hidden')?'cart':'chat')});
+/* ---- IA compartilhada: a chave fica protegida no servidor Netlify ---- */
+const MODELS=['gemini-2.5-flash','gemini-2.0-flash'];
+function setKey(){toast('A IA já está configurada para todos!')}
+const b64=b=>new Promise(r=>{const f=new FileReader();f.onload=()=>r(f.result.split(',')[1]);f.readAsDataURL(b)});
+async function gemini(parts){
+  const r=await fetch('/.netlify/functions/gemini',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({parts})}).catch(()=>null);
+  if(!r)throw{code:'rede'};
+  if(!r.ok){let j={};try{j=await r.json()}catch(e){};throw{code:j.code||('http_'+r.status)}}
+  const j=await r.json();if(!j.text)throw{code:'vazio'};
+  return JSON.parse(j.text.replace(/```json|```/g,'').trim());
+}
+sample={limits:async()=>({images:true}),json:async(prompt,o)=>{const parts=[{text:prompt}];for(const b of (o&&o.images)||[])parts.push({inlineData:{mimeType:'image/jpeg',data:await b64(b)}});return gemini(parts)}};
+</script>
+<script>
+if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./sw.js").catch(() => {});
+  });
+}
+</script>
+</body>
+</html>
