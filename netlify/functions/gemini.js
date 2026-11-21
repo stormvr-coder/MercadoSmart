@@ -49,7 +49,8 @@ exports.handler = async (event) => {
     };
   }
 
-  const models = ['gemini-3.5-flash-lite', 'gemini-3.8-flash'];
+  const models = ['gemini-flash-latest', 'gemini-2.5-flash'];
+  
 
   for (const model of models) {
     let response;
